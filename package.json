@@ -1,0 +1,14 @@
+{
+  "name": "mapforge-ddr",
+  "version": "1.0.0",
+  "description": "Iterate through all double directionals (DDs) and reverse them until no DD remains.",
+  "main": "ddr.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Hudson Atwell",
+  "license": "GPL",
+  "dependencies": {
+    "jsonfile": "^6.1.0"
+  }
+}
