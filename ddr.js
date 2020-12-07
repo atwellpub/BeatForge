@@ -6,7 +6,7 @@ const setup = {
     "mode" : "rewrite",
     "backup" : true, /* not implemented */
     "eliminateDDs" : true,
-    "fixTriangles" : true,
+    "fixTriangles" : false,
 };
 
 /**
@@ -26,21 +26,17 @@ var DDR = ( function() {
 
     return {
         init: function( n ) {
-            DDR.routines = [
-                "loadFile",
-                "reversify",
-                "fixTriangles",
-                "writeFile"
-            ]
+            DDR.routines = []
 
-            /* unset disabled */
-            if (!setup.eliminateDDs) {
-                delete DDR.routines['reversify']
+            /* setup routine chain */
+            DDR.routines.push("loadFile")
+            if (setup.eliminateDDs) {
+                DDR.routines.push("reversify")
             }
-
-            if (!setup.fixTriangles) {
-                delete DDR.routines['fixTriangles']
+            if (setup.fixTriangles) {
+                DDR.routines.push("fixTriangles")
             }
+            DDR.routines.push("writeFile")
 
             /* set defaults */
             DDR.map = {};
@@ -96,7 +92,7 @@ var DDR = ( function() {
                 }
 
                 /* if note is blue check for DD */
-                if (note._type === 0) {
+                if (note._type === 1) {
 
                     /* check if this red block is the same as the last red block and switch it if it is */
                     if ( note._cutDirection == DDR.memory.blueState ) {
@@ -117,8 +113,6 @@ var DDR = ( function() {
             /* set newNotes into map */
             DDR.map._notes = DDR.newNotes;
 
-            console.log(DDR.map._notes);
-
             DDR.runNext();
         },
         /**
@@ -135,23 +129,23 @@ var DDR = ( function() {
                 case 1:
                     return 0;
                     break;
-                case 2:
-                    return 3;
-                    break;
-                case 3:
-                    return 2;
-                    break;
-                case 4:
-                    return 7;
-                    break;
                 case 5:
                     return 6;
                     break;
                 case 6:
                     return 5;
                     break;
+                case 3:
+                    return 2;
+                    break;
+                case 2:
+                    return 3;
+                    break;
                 case 7:
                     return 4;
+                    break;
+                case 4:
+                    return 7;
                     break;
                 case 8:
                     return 8;
@@ -170,7 +164,7 @@ var DDR = ( function() {
 
                 /* if red */
                 if (note._type === 0) {
-                    DDR.memory.redState.add(note._cutDirection)
+                    DDR.memory.redState.push(note._cutDirection)
 
                     /* check if this note qualifies as triangle */
                 }
