@@ -24,4 +24,6 @@ And if all is well, all double directionals will automatically be replaced until
 ## Todo
 
 * Automatically solve parity triangles by randomly generating an non conflicting cut.
-* Add time markers to ignore
+* Add time markers to ignore [added]
+* Auto ignore same color notes on same time [added]
+* Auto knock down notes converted to down arrows on the top row.

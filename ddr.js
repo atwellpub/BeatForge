@@ -4,9 +4,15 @@
 const setup = {
     "difficulty" : "hard",
     "mode" : "rewrite",
-    "backup" : true, /* not implemented */
+    "backup" : false, /* not implemented */
+    "overwrite" : false, /* not implemented */
     "eliminateDDs" : true,
-    "fixTriangles" : false,
+    "fixTriangles" : false, /* not implemented */
+    "minDistance" :.05, /* we will only correct dd if delta occurance is greater than this number - looks forward and backwards for same color notes */
+    "maxDistance" : 20, /* we will only correct dd if delta occurance is less than this number */
+    "ignoreTimes" : [
+        236,237,238,239,240,252,253,255,256,270,271,272,287,288,302,303,304,311,312,357,358,359,367,368,383,384,399,400,963,964,979,980,995,996,1003,1004,1007,1008,1011,1012,1019,1020,1043,1044,1051,1052,1059,1060,1067,1068,1086,1087,1217,1224,1232,1249,1257
+    ]
 };
 
 /**
@@ -69,38 +75,104 @@ var DDR = ( function() {
             DDR.memory.redState = -1;
             DDR.memory.blueState = -1;
 
-            DDR.map._notes.forEach(function(note) {
+            DDR.map._notes.forEach(function(note ,index) {
+
+                var parsedTime = note._time.toString().split('.');
+                var time = parseInt(parsedTime[0]);
 
                 /* if the cut direction is a dot then record in memory and skip */
                 if (note._cutDirection === 8) {
                     DDR.newNotes.push(note);
-                    DDR.memory.redState = (note._type) ? 8 : DDR.memory.redState;
-                    DDR.memory.blueState = (!note._type) ? 8 : DDR.memory.blueState;
+                    DDR.memory.redState = (note._type) ? note : DDR.memory.redState;
+                    DDR.memory.blueState = (!note._type) ? note : DDR.memory.blueState;
+                    return;
+                }
+
+                /* if the note is on the ignore timeline the record in memory and skip */
+                if (setup.ignoreTimes.includes(time)) {
+                    DDR.newNotes.push(note);
+                    DDR.memory.redState = (note._type) ? note : DDR.memory.redState;
+                    DDR.memory.blueState = (!note._type) ? note : DDR.memory.blueState;
+                    console.log("ignoring note as it is on an ignored time marker");
                     return;
                 }
 
                 /* if note is red check for DD */
                 if (note._type === 0) {
 
+                    /* check if last note is within the acceptable max distance */
+                    if ((note._time - DDR.memory.redState._time) < setup.minDistance) {
+                        DDR.newNotes.push(note);
+                        console.log("Note skipped because time delta is too small");
+                        DDR.memory.redState = note;
+                        return;
+                    }
+
+                    /* check to make sure next note is also not within minimal acceptable distance */
+                    var nextNote = DDR.map._notes[index+1];
+                    if (nextNote._type==note._type) {
+                        if ((nextNote._time - note._time) < setup.minDistance) {
+                            DDR.newNotes.push(note);
+                            console.log("Note skipped because next note is same color, and is too close");
+                            DDR.memory.redState = note;
+                            return;
+                        }
+                    }
+
+                    /* check if last note is within the acceptable max distance */
+                    if ((note._time - DDR.memory.redState._time) > setup.maxDistance) {
+                        DDR.newNotes.push(note);
+                        console.log("Note skipped because time delta is too great");
+                        DDR.memory.redState = note;
+                        return;
+                    }
+
                     /* check if this red block is the same as the last red block and switch it if it is */
-                    if ( note._cutDirection == DDR.memory.redState ) {
+                    if ( note._cutDirection == DDR.memory.redState._cutDirection ) {
                         note._cutDirection = DDR.getOpposite(note._cutDirection)
                     }
 
                     /* update memory */
-                    DDR.memory.redState = note._cutDirection
+                    DDR.memory.redState = note
                 }
 
                 /* if note is blue check for DD */
                 if (note._type === 1) {
 
+                    /* check if last note is within the acceptable min distance */
+                    if ((note._time - DDR.memory.blueState._time) < setup.minDistance) {
+                        DDR.newNotes.push(note);
+                        console.log("Note skipped because time delta is too small");
+                        DDR.memory.blueState = note;
+                        return;
+                    }
+
+                    /* check to make sure next note is also not within minimal acceptable distance */
+                    var nextNote = DDR.map._notes[index+1];
+                    if (nextNote._type==note._type) {
+                        if ((nextNote._time - note._time) < setup.minDistance) {
+                            DDR.newNotes.push(note);
+                            console.log("Note skipped because next note is same color, and is too close");
+                            DDR.memory.blueState = note;
+                            return;
+                        }
+                    }
+
+                    /* check if last note is within acceptable an max distance */
+                    if ((note._time - DDR.memory.blueState._time) > setup.maxDistance) {
+                        DDR.newNotes.push(note);
+                        console.log("Note skipped because time delta is too great");
+                        DDR.memory.blueState = note;
+                        return;
+                    }
+
                     /* check if this red block is the same as the last red block and switch it if it is */
-                    if ( note._cutDirection == DDR.memory.blueState ) {
+                    if ( note._cutDirection == DDR.memory.blueState._cutDirection ) {
                         note._cutDirection = DDR.getOpposite(note._cutDirection)
                     }
 
                     /* update memory */
-                    DDR.memory.blueState = note._cutDirection
+                    DDR.memory.blueState = note
                 }
 
                 /* add modified note to notes replacement object */
